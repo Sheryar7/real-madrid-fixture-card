@@ -46,24 +46,40 @@ export default function FixtureCard({ overrideState = "default" }: FixtureCardPr
         if (overrideState === "loading") return;
         if (overrideState === "error") {
             setLoading(false);
-            setError("Failed to fetch Real Madrid fixture data. Please check your network connection.");
+            setError("Failed to fetch live Real Madrid fixture data.");
             return;
         }
 
         try {
-            const { data, error: fetchError } = await supabase
-                .from("matches")
-                .select("*")
-                .order("match_date", { ascending: activeTab === "UPCOMING" });
+            const res = await fetch("/api/matches");
+            if (!res.ok) throw new Error("API Connection Failed");
 
-            if (fetchError) throw fetchError;
+            const data = await res.json();
 
             if (overrideState === "empty") {
                 setMatches([]);
-            } else {
-                const filtered = (data || []).filter((m) => m.status === activeTab);
-                setMatches(filtered);
+                return;
             }
+
+            // Transform live API structure into your app's match format
+            const transformedMatches: Match[] = data.matches.map((m: any) => {
+                const isHome = m.homeTeam.id === 86;
+                return {
+                    id: String(m.id),
+                    opponent_name: isHome ? m.awayTeam.name : m.homeTeam.name,
+                    opponent_logo: isHome ? m.awayTeam.crest : m.homeTeam.crest,
+                    competition: m.competition.name,
+                    match_date: m.utcDate,
+                    venue: m.venue || "Santiago Bernabéu",
+                    is_home: isHome,
+                    status: m.status === "FINISHED" ? "FINISHED" : "UPCOMING",
+                    home_score: m.score.fullTime.home,
+                    away_score: m.score.fullTime.away,
+                };
+            });
+
+            const filtered = transformedMatches.filter((m) => m.status === activeTab);
+            setMatches(filtered);
         } catch (err: any) {
             setError(err.message || "An unexpected error occurred.");
         } finally {
@@ -127,8 +143,8 @@ export default function FixtureCard({ overrideState = "default" }: FixtureCardPr
                         onClick={() => setActiveTab("UPCOMING")}
                         onKeyDown={handleTabKeyDown}
                         className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-amber-400 ${activeTab === "UPCOMING"
-                                ? "bg-amber-500 text-slate-950 font-semibold shadow-md"
-                                : "text-slate-400 hover:text-white"
+                            ? "bg-amber-500 text-slate-950 font-semibold shadow-md"
+                            : "text-slate-400 hover:text-white"
                             }`}
                     >
                         Upcoming
@@ -141,8 +157,8 @@ export default function FixtureCard({ overrideState = "default" }: FixtureCardPr
                         onClick={() => setActiveTab("FINISHED")}
                         onKeyDown={handleTabKeyDown}
                         className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-amber-400 ${activeTab === "FINISHED"
-                                ? "bg-amber-500 text-slate-950 font-semibold shadow-md"
-                                : "text-slate-400 hover:text-white"
+                            ? "bg-amber-500 text-slate-950 font-semibold shadow-md"
+                            : "text-slate-400 hover:text-white"
                             }`}
                     >
                         Results
