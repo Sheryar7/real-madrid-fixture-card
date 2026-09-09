@@ -1,30 +1,49 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const API_KEY = process.env.NEXT_PUBLIC_FOOTBALL_DATA_KEY;
-  // Real Madrid's Official Team ID in Football-Data.org is 86
+  const API_KEY = process.env.FOOTBALL_DATA_KEY;
+
+  if (!API_KEY) {
+    return NextResponse.json(
+      { error: "API key is missing in environment variables" },
+      { status: 500 }
+    );
+  }
+
+  // Team ID 86 = Real Madrid
   const URL = "https://api.football-data.org/v4/teams/86/matches";
 
   try {
     const response = await fetch(URL, {
       headers: {
-        "X-Auth-Token": API_KEY || "",
+        "X-Auth-Token": API_KEY,
       },
-      next: { revalidate: 3600 }, // Cache data for 1 hour
+      next: { revalidate: 3600 }, // Cache response for 1 hour to prevent rate limiting
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Football-Data API Error [${response.status}]:`, errorText);
+
+      if (response.status === 429) {
+        return NextResponse.json(
+          { error: "Rate limit reached (10 requests/min). Please wait a minute and retry." },
+          { status: 429 }
+        );
+      }
+
       return NextResponse.json(
-        { error: "Failed to fetch live match data from API" },
+        { error: `API request failed with status ${response.status}` },
         { status: response.status }
       );
     }
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Internal API Fetch Error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Failed to communicate with external sports service." },
       { status: 500 }
     );
   }

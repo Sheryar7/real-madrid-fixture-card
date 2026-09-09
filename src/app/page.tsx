@@ -57,7 +57,10 @@ export default function Home() {
         </div>
 
         {/* Main Interactive Component */}
-        <FixtureCard overrideState={overrideState} />
+        <FixtureCard
+          overrideState={overrideState}
+          onResetOverrideState={() => setOverrideState("default")}
+        />
 
         {/* Accessibility & Feature Highlights Footer */}
         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 text-xs text-slate-400 space-y-3">
