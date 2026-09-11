@@ -39,6 +39,10 @@ FOOTBALL_DATA_API_KEY=your_actual_api_key_here
 ### 3. Installation & Local Execution
 Run the following commands in your terminal:
 
+# Clone the repository
+git clone https://github.com/Sheryar7/real-madrid-fixture-card.git
+cd real-madrid-fixture-card
+
 ```bash
 # Install dependencies
 npm install
