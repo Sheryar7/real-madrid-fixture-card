@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
+export const revalidate = 300; // Force 5-minute route revalidation at the module level
+
 export async function GET() {
-  const API_KEY = process.env.FOOTBALL_DATA_KEY;
+  const API_KEY = process.env.FOOTBALL_DATA_API_KEY || process.env.FOOTBALL_DATA_KEY;
 
   if (!API_KEY) {
     return NextResponse.json(
