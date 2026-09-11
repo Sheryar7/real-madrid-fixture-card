@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Real Madrid C.F. Match Center Card — Feature Rebuild
+
+A high-performance, accessible, and responsive rebuild of the **Real Madrid C.F. Official Fixture & Match Center Card**. Built with Next.js 16 (App Router), TypeScript, Tailwind CSS, and powered by the Football-Data API.
+
+---
+
+## Features
+
+- **Optimized Image Loading:** Leverages `next/image` with remote pattern domain configurations for external club crests (`crests.football-data.org`) to eliminate Layout Shifts (CLS).
+- **Server-Side API Caching:** Next.js Route Handler (`/api/matches`) caches upstream responses for 5 minutes (`revalidate: 300`) to strictly adhere to Football-Data API free-tier rate limits (10 requests/minute).
+- **Live / In-Play Match Engine:** Visual status indicators including pulsing red badges for `IN_PLAY`, `PAUSED`, and `LIVE` match states.
+- **Reviewer Test Controls:** Interactive state switcher in the UI to force and test `Default`, `Loading`, `Error`, and `Empty` state representations on demand.
+- **Accessibility & Mobile First:** Full keyboard accessibility (`Tab`, `Enter`, `Escape` modal trapping), backdrop scroll locking (`overflow: hidden`), and minimum 44×44px touch target compliance for mobile interactions.
+
+---
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router with Turbopack)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Icons:** Lucide React
+- **API:** Football-Data API v4
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### 1. Prerequisites
+Ensure you have **Node.js 18.x** or higher installed on your system.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 2. Environment Setup
+Create a `.env.local` file in the root directory of the project and add your Football-Data API key:
+
+```env
+FOOTBALL_DATA_API_KEY=your_actual_api_key_here
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Installation & Local Execution
+Run the following commands in your terminal:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Install dependencies
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Run the development server
+npm run dev
+```
 
-## Learn More
+## Production Build & Verification
+To verify the production build locally:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Comparison with Original Feature
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Feature Rebuilt
+Real Madrid C.F. Official Match Center & Fixture Card — A focused experience for browsing upcoming fixtures, finished scores, live match indicators, team crests, venues, and detailed match metadata.
 
-## Deploy on Vercel
+## Omissions and Rationale
+-**Full League Tables & Player Statistics:** Omitted to concentrate strictly on delivering a bulletproof, accessible fixture card component without unnecessary scope creep.
+- **Ticketing & Checkout Workflows:** Omitted as third-party ticketing requires authenticated, external payment flows outside the scope of a single-feature UI rebuild.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Key Improvements
+- **Interactive Reviewer Test Controls:** Added a dedicated toolbar allowing reviewers to instantly toggle between Default, Loading, Error, and Empty UI states without modifying code or forcing network errors.
+- **Enhanced Mobile Touch Targets & Accessibility:** Implemented strict keyboard trap controls (Escape to close modals), visible focus outlines, and minimum 44×44px touch targets across all interactive elements, exceeding the mobile usability standards of the original feature.

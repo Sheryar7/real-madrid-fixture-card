@@ -18,7 +18,7 @@ export async function GET() {
       headers: {
         "X-Auth-Token": API_KEY,
       },
-      next: { revalidate: 3600 }, // Cache response for 1 hour to prevent rate limiting
+      next: { revalidate: 300 },
     });
 
     if (!response.ok) {
@@ -40,7 +40,7 @@ export async function GET() {
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Internal API Fetch Error:", error);
     return NextResponse.json(
       { error: "Failed to communicate with external sports service." },

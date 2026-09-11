@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, KeyboardEvent } from "react";
+import Image from "next/image";
 import {
   Calendar,
   MapPin,
@@ -20,7 +21,7 @@ export interface Match {
   match_date: string;
   venue: string;
   is_home: boolean;
-  status: "UPCOMING" | "FINISHED";
+  status: "UPCOMING" | "FINISHED" | "IN_PLAY" | "PAUSED" | "LIVE";
   home_score: number | null;
   away_score: number | null;
 }
@@ -28,6 +29,22 @@ export interface Match {
 interface FixtureCardProps {
   overrideState?: "default" | "loading" | "error" | "empty";
   onResetOverrideState?: () => void;
+}
+
+interface FootballDataMatch {
+  id: number;
+  homeTeam: { id: number; name: string; crest: string };
+  awayTeam: { name: string; crest: string };
+  competition: { name: string };
+  utcDate: string;
+  venue?: string;
+  status: string;
+  score?: { fullTime?: { home: number | null; away: number | null } };
+}
+
+interface FootballDataResponse {
+  matches?: FootballDataMatch[];
+  error?: string;
 }
 
 // Fallback lookup table for opponent stadiums (Football-Data free tier omits away venue fields)
@@ -90,7 +107,7 @@ export default function FixtureCard({
 
     try {
       const res = await fetch("/api/matches");
-      const data = await res.json();
+      const data = (await res.json()) as FootballDataResponse;
 
       if (!res.ok) {
         throw new Error(data.error || "API Connection Failed");
@@ -102,7 +119,7 @@ export default function FixtureCard({
       }
 
       // Parse matches from Football-Data.org response
-      const transformedMatches: Match[] = (data.matches || []).map((m: any) => {
+      const transformedMatches: Match[] = (data.matches || []).map((m) => {
         const isHome = m.homeTeam.id === 86; // 86 is Real Madrid in Football-Data.org
         const opponentName = isHome ? m.awayTeam.name : m.homeTeam.name;
 
@@ -118,10 +135,10 @@ export default function FixtureCard({
         const venueName = isHome
           ? "Santiago Bernabéu, Madrid"
           : m.venue
-          ? m.venue
-          : opponentStadiums[opponentName]
-          ? opponentStadiums[opponentName]
-          : `${opponentName} Stadium`;
+            ? m.venue
+            : opponentStadiums[opponentName]
+              ? opponentStadiums[opponentName]
+              : `${opponentName} Stadium`;
 
         return {
           id: String(m.id),
@@ -132,15 +149,20 @@ export default function FixtureCard({
           match_date: m.utcDate,
           venue: venueName,
           is_home: isHome,
-          status: m.status === "FINISHED" ? "FINISHED" : "UPCOMING",
+          status:
+            m.status === "FINISHED"
+              ? "FINISHED"
+              : ["IN_PLAY", "PAUSED", "LIVE"].includes(m.status)
+                ? (m.status as Match["status"])
+                : "UPCOMING",
           home_score: m.score?.fullTime?.home ?? null,
           away_score: m.score?.fullTime?.away ?? null,
         };
       });
 
       setRawMatches(transformedMatches);
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -156,7 +178,9 @@ export default function FixtureCard({
 
   // 2. Filter matches client-side when activeTab or rawMatches change
   useEffect(() => {
-    const filtered = rawMatches.filter((m) => m.status === activeTab);
+    const filtered = rawMatches.filter((m) =>
+      activeTab === "FINISHED" ? m.status === "FINISHED" : m.status !== "FINISHED"
+    );
     setMatches(filtered);
   }, [activeTab, rawMatches]);
 
@@ -180,6 +204,15 @@ export default function FixtureCard({
     };
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [selectedMatch]);
+
+  // Keep the match detail dialog usable on small screens without background scroll.
+  useEffect(() => {
+    document.body.style.overflow = selectedMatch ? "hidden" : "unset";
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [selectedMatch]);
 
   return (
@@ -211,11 +244,10 @@ export default function FixtureCard({
             tabIndex={activeTab === "UPCOMING" ? 0 : -1}
             onClick={() => setActiveTab("UPCOMING")}
             onKeyDown={handleTabKeyDown}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:flex-none ${
-              activeTab === "UPCOMING"
-                ? "bg-amber-500 text-slate-950 font-semibold shadow-md"
-                : "text-slate-400 hover:text-white"
-            }`}
+            className={`min-h-11 flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:flex-none ${activeTab === "UPCOMING"
+              ? "bg-amber-500 text-slate-950 font-semibold shadow-md"
+              : "text-slate-400 hover:text-white"
+              }`}
           >
             Upcoming
           </button>
@@ -226,11 +258,10 @@ export default function FixtureCard({
             tabIndex={activeTab === "FINISHED" ? 0 : -1}
             onClick={() => setActiveTab("FINISHED")}
             onKeyDown={handleTabKeyDown}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:flex-none ${
-              activeTab === "FINISHED"
-                ? "bg-amber-500 text-slate-950 font-semibold shadow-md"
-                : "text-slate-400 hover:text-white"
-            }`}
+            className={`min-h-11 flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 sm:flex-none ${activeTab === "FINISHED"
+              ? "bg-amber-500 text-slate-950 font-semibold shadow-md"
+              : "text-slate-400 hover:text-white"
+              }`}
           >
             Results
           </button>
@@ -281,7 +312,7 @@ export default function FixtureCard({
                 onResetOverrideState?.();
                 void fetchAllMatches(true);
               }}
-              className="inline-flex items-center gap-2 rounded-lg border border-red-300/20 bg-red-500/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-300/20 bg-red-500/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
             >
               <RefreshCw className="w-4 h-4" />
               Retry Connection
@@ -326,6 +357,12 @@ export default function FixtureCard({
                     <Trophy className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">{match.competition}</span>
                   </div>
+                  {["IN_PLAY", "PAUSED", "LIVE"].includes(match.status) && (
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-red-400/20 bg-red-400/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-red-300">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+                      {match.status === "PAUSED" ? "Paused" : "Live"}
+                    </div>
+                  )}
                   <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 sm:justify-start">
                     <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                     <span>{new Date(match.match_date).toLocaleDateString("en-US", {
@@ -351,12 +388,26 @@ export default function FixtureCard({
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-900 p-1.5">
                       {match.is_home ? (
                         match.real_madrid_logo ? (
-                          <img src={match.real_madrid_logo} alt="" className="h-full w-full object-contain" />
+                          <Image
+                            src={match.real_madrid_logo}
+                            alt=""
+                            width={36}
+                            height={36}
+                            className="h-9 w-9 object-contain"
+                            style={{ height: "auto" }}
+                          />
                         ) : (
                           <span className="text-[10px] font-black text-amber-300">RM</span>
                         )
                       ) : match.opponent_logo ? (
-                        <img src={match.opponent_logo} alt="" className="h-full w-full object-contain" />
+                        <Image
+                          src={match.opponent_logo}
+                          alt=""
+                          width={36}
+                          height={36}
+                          className="h-9 w-9 object-contain"
+                          style={{ height: "auto" }}
+                        />
                       ) : (
                         <span className="text-[10px] font-bold text-slate-400">FC</span>
                       )}
@@ -367,7 +418,11 @@ export default function FixtureCard({
                   <div className="min-w-13 rounded-lg border border-amber-400/20 bg-amber-400/10 px-2.5 py-2 text-center font-mono text-xs font-bold text-amber-300">
                     {match.status === "FINISHED"
                       ? `${match.home_score} - ${match.away_score}`
-                      : "VS"}
+                      : ["IN_PLAY", "PAUSED", "LIVE"].includes(match.status)
+                        ? match.home_score !== null && match.away_score !== null
+                          ? `${match.home_score} - ${match.away_score}`
+                          : "LIVE"
+                        : "VS"}
                   </div>
 
                   {/* Away Team */}
@@ -375,12 +430,26 @@ export default function FixtureCard({
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-900 p-1.5">
                       {match.is_home ? (
                         match.opponent_logo ? (
-                          <img src={match.opponent_logo} alt="" className="h-full w-full object-contain" />
+                          <Image
+                            src={match.opponent_logo}
+                            alt=""
+                            width={36}
+                            height={36}
+                            className="h-9 w-9 object-contain"
+                            style={{ height: "auto" }}
+                          />
                         ) : (
                           <span className="text-[10px] font-bold text-slate-400">FC</span>
                         )
                       ) : match.real_madrid_logo ? (
-                        <img src={match.real_madrid_logo} alt="" className="h-full w-full object-contain" />
+                        <Image
+                          src={match.real_madrid_logo}
+                          alt=""
+                          width={36}
+                          height={36}
+                          className="h-9 w-9 object-contain"
+                          style={{ height: "auto" }}
+                        />
                       ) : (
                         <span className="text-[10px] font-black text-amber-300">RM</span>
                       )}
@@ -411,7 +480,7 @@ export default function FixtureCard({
           <div className="relative w-full max-w-md space-y-5 rounded-2xl border border-slate-700/80 bg-slate-900 p-6 shadow-2xl shadow-slate-950/60">
             <button
               onClick={() => setSelectedMatch(null)}
-              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+              className="absolute right-4 top-4 flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
               aria-label="Close details modal"
             >
               <X className="w-5 h-5" />
@@ -429,9 +498,9 @@ export default function FixtureCard({
               <p className="flex items-start justify-between gap-4 py-3">
                 <strong className="text-slate-400">Fixture</strong>
                 <span className="text-right text-slate-100">
-                {selectedMatch.is_home
-                  ? `Real Madrid vs ${selectedMatch.opponent_name}`
-                  : `${selectedMatch.opponent_name} vs Real Madrid`}
+                  {selectedMatch.is_home
+                    ? `Real Madrid vs ${selectedMatch.opponent_name}`
+                    : `${selectedMatch.opponent_name} vs Real Madrid`}
                 </span>
               </p>
               <p className="flex items-start justify-between gap-4 py-3">
@@ -457,7 +526,7 @@ export default function FixtureCard({
             <div className="pt-1">
               <button
                 onClick={() => setSelectedMatch(null)}
-                className="w-full rounded-xl bg-amber-400 py-2.5 font-bold text-slate-950 transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                className="min-h-11 w-full rounded-xl bg-amber-400 py-2.5 font-bold text-slate-950 transition hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
               >
                 Close (Esc)
               </button>
