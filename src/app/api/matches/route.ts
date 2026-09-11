@@ -12,7 +12,6 @@ export async function GET() {
     );
   }
 
-  // Team ID 86 = Real Madrid
   const URL = "https://api.football-data.org/v4/teams/86/matches";
 
   try {
@@ -50,3 +49,4 @@ export async function GET() {
     );
   }
 }
+
