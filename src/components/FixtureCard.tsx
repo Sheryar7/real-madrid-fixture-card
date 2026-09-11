@@ -12,6 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+
 export interface Match {
   id: string;
   opponent_name: string;
