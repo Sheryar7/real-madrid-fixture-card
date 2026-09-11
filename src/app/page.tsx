@@ -10,12 +10,12 @@ export default function Home() {
   >("default");
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-slate-900 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Banner Header */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-amber-400">
-            <Shield className="w-4 h-4 text-amber-400" />
+            <Shield className="w-4 h-4 text-amber-500"/>
             <span>DevConnect Final Project • Feature Rebuild</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
